@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Field Extractor</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>Upload PDF to Extract Information</h1>
+    <form id="pdfForm" method="POST" action="/extract-fields" enctype="multipart/form-data">
+        <input type="file" id="pdfFile" name="pdf" accept=".pdf" required>
+        <button type="submit">Extract Fields</button>
+    </form>
+
+    <!-- Output container -->
+    <div id="output" class="output">
+        <h2>Extracted Fields</h2>
+        <div id="fieldsContainer"></div>
+
+        <h2>General Text</h2>
+        <div id="generalTextContainer"></div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('pdfForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('pdf', document.getElementById('pdfFile').files[0]);
+
+        try {
+            const response = await fetch('/extract-fields', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            const fieldsContainer = document.getElementById('fieldsContainer');
+            const generalTextContainer = document.getElementById('generalTextContainer');
+            fieldsContainer.innerHTML = '';  // Clear previous results
+            generalTextContainer.innerHTML = '';  // Clear previous results
+
+            if (result.extracted_fields) {
+                for (const [field, value] of Object.entries(result.extracted_fields)) {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.classList.add('field');
+                    fieldDiv.innerHTML = `<strong>${field}:</strong> ${value}`;
+                    fieldsContainer.appendChild(fieldDiv);
+                }
+            }
+
+            if (result.general_text) {
+                const generalDiv = document.createElement('div');
+                generalDiv.classList.add('general-text');
+                generalDiv.textContent = result.general_text;
+                generalTextContainer.appendChild(generalDiv);
+            } else {
+                generalTextContainer.textContent = 'No general text recognized.';
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('fieldsContainer').textContent = 'An error occurred while extracting fields.';
+        }
+    });
+</script>
+
+</body>
+</html>
